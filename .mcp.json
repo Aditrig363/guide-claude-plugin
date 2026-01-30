@@ -1,0 +1,9 @@
+{
+  "sonatype-guide": {
+    "type": "http",
+    "url": "https://mcp.guide.sonatype.com/mcp",
+    "headers": {
+      "Authorization": "Bearer ${SONATYPE_GUIDE_TOKEN}"
+    }
+  }
+}
