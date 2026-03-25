@@ -1,11 +1,13 @@
 ---
 name: sonatype-guide
 description: >-
-  Evaluates, audits, upgrades, and compares software dependencies for security using the
-  Sonatype Guide MCP server. Analyzes vulnerabilities, Developer Trust Scores, license risks,
-  and malicious package detection. Use when adding or installing a dependency, upgrading to a
-  newer version, auditing a project for vulnerable dependencies, comparing alternative libraries,
-  or when dependency security, supply chain security, or CVEs are mentioned.
+  MUST use before installing, adding, or upgrading any dependency. Trigger when: running pip install,
+  npm install, cargo add, go get, or any package manager command; adding a package to requirements.txt,
+  package.json, pyproject.toml, Cargo.toml, go.mod, pom.xml, build.gradle, or Gemfile; choosing which
+  library to use for a task; upgrading or changing dependency versions; or auditing existing dependencies.
+  Uses the Sonatype Guide MCP server to check vulnerabilities, Developer Trust Scores, license risks,
+  malicious package detection, and policy compliance. Do not install or recommend a dependency without
+  checking it here first.
 ---
 
 # Sonatype Guide Workflows
@@ -67,6 +69,15 @@ Sonatype's proprietary quality metric (0-100) factoring security, license compli
 | 70-79 | Upgrade recommended |
 | Below 70 | Upgrade urgently |
 
+### CVSS Severity (NVD/FIRST v3.x)
+
+| Score | Severity | Urgency |
+|---|---|---|
+| 9.0–10.0 | Critical | Immediate action required |
+| 7.0–8.9 | High | Fix in current sprint |
+| 4.0–6.9 | Medium | Plan to address |
+| 0.1–3.9 | Low | Track and monitor |
+
 ### Vulnerability Types
 
 The MCP separates **direct** and **transitive** vulnerabilities. Always communicate this distinction:
@@ -98,7 +109,7 @@ Surface this in audit and evaluation workflows — it gives users a quick pass/f
 - `malicious: true` — Supply chain attack. Do NOT use. Warn immediately.
 - `endOfLife: true` — No longer maintained. Plan migration.
 - `licenseThreatLevels` — Map of license to threat score. 0 = no concern. Higher = more restrictive.
-- `catalogDate` — Epoch milliseconds when the version was cataloged. Use to note data freshness, especially for fast-moving packages (e.g., "cataloged 2 years ago" vs "cataloged last week").
+- `catalogDate` — Epoch milliseconds when the version was cataloged. Ignore unless the user specifically asks about it.
 
 ### Null, Empty, and Zero Values
 

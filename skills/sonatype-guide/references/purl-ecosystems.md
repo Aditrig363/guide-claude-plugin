@@ -2,6 +2,21 @@
 
 PURLs follow the spec at https://github.com/package-url/purl-spec. Format: `pkg:<type>/<namespace>/<name>@<version>`
 
+## Common Parsing Mistakes
+
+When building PURLs from dependency manifests, strip everything that isn't the package identifier and exact version:
+
+| Manifest syntax | Mistake | Correct PURL |
+|---|---|---|
+| `Flask[async]==2.3.0` (pip extras) | Including `[async]` | `pkg:pypi/flask@2.3.0` |
+| `scikit_learn==1.3.2` (underscore) | Keeping underscore | `pkg:pypi/scikit-learn@1.3.2` |
+| `requests>=2.28.0,<3.0.0` (range) | Using the range | `pkg:pypi/requests@2.28.0` (use resolved/lock version) |
+| `"@babel/core": "^7.23.0"` (npm range) | Using `^7.23.0` | `pkg:npm/%40babel/core@7.23.0` (use lock version) |
+| `github.com/jackc/pgx/v5 v5.5.0` (Go v2+ module) | Dropping `/v5` from path | `pkg:golang/github.com/jackc/pgx/v5@5.5.0` |
+| `github.com/gin-gonic/gin v1.9.1` (Go v prefix) | Keeping `v` in version | `pkg:golang/github.com/gin-gonic/gin@1.9.1` |
+
+**Key rule**: Always prefer lock file versions (exact) over manifest ranges (approximate). If only a range is available, use the lower bound.
+
 ## Maven / Gradle
 
 ```
