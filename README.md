@@ -6,10 +6,11 @@ Integrates [Sonatype Guide](https://guide.sonatype.com) MCP server to provide Cl
 
 With this plugin, Claude Code can:
 
-- **Analyze dependencies for vulnerabilities** - Scan your project's dependencies for known security issues
-- **Get version recommendations** - Find secure, well-maintained versions of packages
-- **Check component quality metrics** - Evaluate packages based on security, licensing, and quality scores
-- **Query package information** - Look up detailed information about any component in Sonatype's database
+- **Proactively check dependencies** - Automatically evaluates packages before installing or upgrading, not just when you ask
+- **Analyze vulnerabilities** - Surface CVEs with severity scores, distinguishing direct vs transitive risks
+- **Recommend secure versions** - Ranked upgrade paths with Developer Trust Scores and breaking change analysis
+- **Audit your project** - Scan dependency manifests for security, license, and policy compliance issues
+- **Compare alternatives** - Side-by-side security comparison when choosing between libraries
 
 ## Prerequisites
 
@@ -68,28 +69,20 @@ Check the MCP server status:
 
 You should see `sonatype-guide` listed as connected.
 
-## Usage Examples
+## Usage
 
-Once installed, ask Claude to help with dependency security:
+The plugin includes a skill that activates automatically when Claude installs, adds, or upgrades dependencies — no special syntax needed. You can also ask directly:
 
-**Check a specific package:**
-```
-What vulnerabilities exist in log4j 2.14.0?
-```
-
-**Analyze project dependencies:**
 ```
 Scan my package.json for vulnerable dependencies
 ```
 
-**Get upgrade recommendations:**
 ```
 What's the most secure version of spring-core I should use?
 ```
 
-**Evaluate a component:**
 ```
-Analyze the security and quality of pkg:maven/org.apache.commons/commons-lang3@3.12.0
+Should I use axios or got for HTTP requests?
 ```
 
 ## Troubleshooting
