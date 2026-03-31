@@ -78,14 +78,21 @@ Sonatype's proprietary quality metric (0-100) factoring security, license compli
 | 4.0–6.9 | Medium | Plan to address |
 | 0.1–3.9 | Low | Track and monitor |
 
-### Vulnerability Types
+### Vulnerabilities
 
-The MCP separates **direct** and **transitive** vulnerabilities. Always communicate this distinction:
+`getComponentVersion` returns a `vulnerabilities` object with a flat `cves` array:
 
-- **`directVulnerabilities`** — CVEs in the package's own code. These are the most urgent — the user's code directly calls this library.
-- **`transitiveVulnerabilities`** — CVEs in dependencies of the package. Still important, but may be mitigated by how intermediate libraries use the affected code. Note this nuance to users.
+```
+vulnerabilities: {
+  cves: [
+    { id: "CVE-2021-44228", cvssScore: 10.0 },
+    { id: "CVE-2021-45046", cvssScore: 9.0 },
+    ...
+  ]
+}
+```
 
-When presenting results, list direct vulnerabilities first and label them clearly. For transitive vulnerabilities, mention that upgrading the top-level package often resolves these (since it pulls in patched transitive deps).
+The API does **not** distinguish between direct and transitive vulnerabilities — all CVEs are returned in a single list. Present them sorted by CVSS score (highest first). When reporting, state the total CVE count and highlight any with CVSS >= 7.0.
 
 ### Policy Compliance
 
@@ -153,9 +160,9 @@ When recommending versions from `getRecommendedComponentVersions` results:
 **Output**:
 
 ```
-| Version | Trust Score | Direct CVEs | Transitive CVEs | License | Policy |
-|---------|-------------|-------------|-----------------|---------|--------|
-| x.y.z   | 99          | 0           | 0               | MIT     | Pass   |
+| Version | Trust Score | CVEs | Critical/High | License | Policy |
+|---------|-------------|------|---------------|---------|--------|
+| x.y.z   | 99          | 0    | 0             | MIT     | Pass   |
 
 Recommendation: ...
 ```
@@ -177,7 +184,7 @@ Recommendation: ...
 **Output**:
 
 ```
-Current: <package>@<version> (Trust Score: X, Direct CVEs: N, Transitive CVEs: M)
+Current: <package>@<version> (Trust Score: X, CVEs: N, Critical/High: M)
 
 Recommended (same major):
 1. <version> (Trust Score: Y) — <rationale>
@@ -197,7 +204,7 @@ Breaking changes to review: N (or "not analyzed — review changelog")
 1. Find the project's dependency manifest. Prefer lock files for exact versions.
 2. Parse dependencies and build PURLs.
 3. Batch-query `sonatype-guide:getComponentVersion` (up to 20 per call). For larger projects, prioritize direct dependencies.
-4. Sort by severity: malicious first, then policy non-compliant, then end-of-life, then CVEs by CVSS (direct before transitive), then license concerns.
+4. Sort by severity: malicious first, then policy non-compliant, then end-of-life, then CVEs by CVSS score (highest first), then license concerns.
 5. For packages with issues, call `sonatype-guide:getRecommendedComponentVersions` to suggest fixes — **only recommend upgrades, never downgrades**.
 
 **Output**:
@@ -208,11 +215,11 @@ Breaking changes to review: N (or "not analyzed — review changelog")
 Scanned: N dependencies | Issues: X | Policy violations: Y
 
 ### Critical
-- <package>@<version>: <issue> [DIRECT]
+- <package>@<version>: <issue> (CVSS X.X)
   Recommended upgrade: <version> (Trust Score: Y)
 
 ### Warnings
-- <package>@<version>: <issue> [TRANSITIVE]
+- <package>@<version>: <issue> (CVSS X.X)
   Recommended upgrade: <version> (Trust Score: Y)
 
 ### Summary
@@ -221,8 +228,7 @@ Scanned: N dependencies | Issues: X | Policy violations: Y
 | Malicious | 0 |
 | Policy non-compliant | 1 |
 | End of Life | 1 |
-| Critical/High CVEs (direct) | 2 |
-| Critical/High CVEs (transitive) | 3 |
+| Critical/High CVEs | 2 |
 | Medium CVEs | 3 |
 | License concerns | 1 |
 ```
@@ -236,7 +242,7 @@ Scanned: N dependencies | Issues: X | Policy violations: Y
 1. Build PURLs for each candidate. If no version specified, call `sonatype-guide:getLatestComponentVersion` first.
 2. Call `sonatype-guide:getRecommendedComponentVersions` on each to get Trust Scores.
 3. Call `sonatype-guide:getComponentVersion` on each for policy compliance details.
-4. Compare: Trust Score, direct CVEs, transitive CVEs, license, policy compliance, end-of-life, malicious flag.
+4. Compare: Trust Score, CVE count and severity, license, policy compliance, end-of-life, malicious flag.
 
 **Output**:
 
@@ -245,8 +251,8 @@ Scanned: N dependencies | Issues: X | Policy violations: Y
 |--------|-------|-------|-------|
 | Latest Version | x.y.z | a.b.c | d.e.f |
 | Trust Score | 99 | 85 | 72 |
-| Direct CVEs | 0 | 1 | 2 |
-| Transitive CVEs | 0 | 0 | 1 |
+| CVEs | 0 | 1 | 3 |
+| Critical/High CVEs | 0 | 1 | 2 |
 | License | MIT | Apache-2.0 | GPL-3.0 |
 | Policy Compliant | Yes | Yes | No |
 
@@ -263,6 +269,6 @@ Recommendation: <lib A> — <rationale>
 - Default to same-major-version recommendations; present major upgrades as a secondary option.
 - If `malicious: true`, warn immediately. Never recommend a malicious component.
 - If `policyCompliance.compliant` is `false`, call out failing conditions.
-- Distinguish direct vs transitive vulnerabilities in all output.
+- Report total CVE count and highlight critical/high severity (CVSS >= 7.0) in all output.
 - When `breakingChangesCount` is `null`, warn that analysis is unavailable.
 - Batch PURLs to minimize API calls.
