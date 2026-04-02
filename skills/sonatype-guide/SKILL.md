@@ -16,7 +16,7 @@ description: >-
 
 ### Never Recommend Downgrades
 
-When a user provides their current version, **every recommendation must be >= that version**. The MCP returns versions ranked by Developer Trust Score, which can include older versions — you MUST filter these out.
+When a user provides their current version, **every recommendation must be >= that version**. The MCP returns versions ranked by Developer Trust Score, which can include older versions — filter these out before presenting results.
 
 **Only two exceptions exist:**
 1. The user explicitly and repeatedly insists on a downgrade after being warned.
@@ -54,6 +54,8 @@ Three MCP tools available via `sonatype-guide`. All accept arrays of up to 20 PU
 - **sonatype-guide:getLatestComponentVersion** — Find the newest version. Version in PURL is optional.
 - **sonatype-guide:getRecommendedComponentVersions** — Ranked upgrade recommendations with Developer Trust Scores, breaking change counts, and vulnerable method signatures. Omit version for new component picks; include version for upgrade recommendations.
 
+If an MCP call fails or returns unexpected data, tell the user the check could not be completed and suggest they verify manually. Do not silently skip the check or assume the component is safe.
+
 ---
 
 ## Interpreting Results
@@ -69,14 +71,9 @@ Sonatype's proprietary quality metric (0-100) factoring security, license compli
 | 70-79 | Upgrade recommended |
 | Below 70 | Upgrade urgently |
 
-### CVSS Severity (NVD/FIRST v3.x)
+### CVSS Severity
 
-| Score | Severity | Urgency |
-|---|---|---|
-| 9.0–10.0 | Critical | Immediate action required |
-| 7.0–8.9 | High | Fix in current sprint |
-| 4.0–6.9 | Medium | Plan to address |
-| 0.1–3.9 | Low | Track and monitor |
+Use standard NVD CVSS v3.x severity ratings. Treat Critical (9.0+) and High (7.0+) as actionable — always highlight these in output.
 
 ### Vulnerabilities
 
@@ -207,31 +204,7 @@ Breaking changes to review: N (or "not analyzed — review changelog")
 4. Sort by severity: malicious first, then policy non-compliant, then end-of-life, then CVEs by CVSS score (highest first), then license concerns.
 5. For packages with issues, call `sonatype-guide:getRecommendedComponentVersions` to suggest fixes — **only recommend upgrades, never downgrades**.
 
-**Output**:
-
-```
-## Dependency Audit: <project>
-
-Scanned: N dependencies | Issues: X | Policy violations: Y
-
-### Critical
-- <package>@<version>: <issue> (CVSS X.X)
-  Recommended upgrade: <version> (Trust Score: Y)
-
-### Warnings
-- <package>@<version>: <issue> (CVSS X.X)
-  Recommended upgrade: <version> (Trust Score: Y)
-
-### Summary
-| Metric | Count |
-|--------|-------|
-| Malicious | 0 |
-| Policy non-compliant | 1 |
-| End of Life | 1 |
-| Critical/High CVEs | 2 |
-| Medium CVEs | 3 |
-| License concerns | 1 |
-```
+**Output**: Start with a one-line summary (scanned count, issue count, policy violations). Group findings by severity (Critical, then Warnings). For each issue, show package@version, the issue, CVSS score, and recommended upgrade. End with a summary counts table.
 
 ---
 
@@ -261,14 +234,12 @@ Recommendation: <lib A> — <rationale>
 
 ---
 
-## Behaviors
+## Examples
 
-- Proactively check dependencies when the user mentions adding, installing, or updating one.
-- Prefer `sonatype-guide:getRecommendedComponentVersions` for decision-making — richest data.
-- **Always filter out versions older than the user's current version** from recommendations.
-- Default to same-major-version recommendations; present major upgrades as a secondary option.
-- If `malicious: true`, warn immediately. Never recommend a malicious component.
-- If `policyCompliance.compliant` is `false`, call out failing conditions.
-- Report total CVE count and highlight critical/high severity (CVSS >= 7.0) in all output.
-- When `breakingChangesCount` is `null`, warn that analysis is unavailable.
-- Batch PURLs to minimize API calls.
+**User**: "Add requests to this project"
+**Expected behavior**: Build `pkg:pypi/requests`, call `getRecommendedComponentVersions`, check the top result for CVEs/malicious/EOL, and recommend a specific version with its Trust Score before the user runs `pip install`.
+
+**User**: "Upgrade express — we're on 4.18.2"
+**Expected behavior**: Build `pkg:npm/express@4.18.2`, call `getRecommendedComponentVersions`, filter out anything below 4.18.2, present the best 4.x option as primary and any 5.x option as secondary with breaking change warnings.
+
+---
